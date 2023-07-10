@@ -1,16 +1,8 @@
-FROM --platform=linux/x86_64 node:16
-
-#create app directory
+FROM node:18.15.0
 WORKDIR /app
-
-# install dependencies 
-# A Wildcard to make sure that we will copy both package.json and package-lock.json
-COPY package*.json /app/
-
+COPY package.json .
 RUN npm install
-
-# Bundle app source
-COPY . . 
-
+ADD . .
 EXPOSE 8080
-CMD ["npm", "start"]
+USER node
+CMD [ "node","index.js" ]

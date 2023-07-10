@@ -3,29 +3,21 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Connecting to Amazon ECR...
-      - aws --version
-      # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-      - aws ecr get-login-password --region ap-southeast-1 | docker login
-        --username AWS --password-stdin 112946628021.dkr.ecr.ap-southeast-1.amazonaws.com
-      - REPOSITORY_URI=112946628021.dkr.ecr.ap-southeast-1.amazonaws.com/cuong-cicd-6-7
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
   build:
     commands:
-      - echo Build started on `date` hehehe
+      - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build --platform linux/x86_64 -t $REPOSITORY_URI:latest .
-      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG    
   post_build:
     commands:
       - echo Build completed on `date`
-      - echo Pushing the Docker images...
-      - docker push $REPOSITORY_URI:latest
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing image definitions file...
-      - printf '[{"name":"simple-app","imageUri":"%s"}]'
-        $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      - cat imagedefinitions.json
+      - echo Pushing the Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinition.json
+      - cat imagedefinition.json
 artifacts:
-  files: imagedefinitions.json
+  files: imagedefinition.json
